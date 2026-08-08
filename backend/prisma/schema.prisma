@@ -1,0 +1,224 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Course {
+  id           Int        @id @default(autoincrement())
+  title        String
+  syllabusType String     // e.g., 'NCERT_11'
+  exercises    Exercise[]
+}
+
+model Exercise {
+  id            Int        @id @default(autoincrement())
+  title         String
+  sequenceOrder Int
+  courseId      Int
+  course        Course     @relation(fields: [courseId], references: [id])
+  subtopics     Subtopic[]
+}
+
+model Subtopic {
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?
+  sequenceOrder Int
+  exerciseId    Int
+  exercise      Exercise       @relation(fields: [exerciseId], references: [id])
+  contentBlocks ContentBlock[]
+}
+
+model ContentBlock {
+  id                   Int         @id @default(autoincrement())
+  contentType          String      // 'markdown', 'video', 'image', 'hidden'
+  contentData          String      // JSON or Markdown string
+  sequenceOrder        Int
+  triggerAtScrollDepth Int?        @default(0)
+  subtopicId           Int
+  subtopic             Subtopic    @relation(fields: [subtopicId], references: [id])
+  checkpoint           Checkpoint?
+}
+
+model Checkpoint {
+  id                  Int          @id @default(autoincrement())
+  questionText        String
+  questionType        String       // 'mcq', 'msq', etc.
+  options             String       // JSON stringified array
+  correctAnswer       String       // JSON stringified value
+  explanationMarkdown String?
+  difficulty          String       // 'easy', 'medium', 'hard'
+  contentBlock        ContentBlock @relation(fields: [contentBlockId], references: [id])
+  contentBlockId      Int          @unique
+}
+
+model User {
+  id                          Int       @id @default(autoincrement())
+  name                        String
+  email                       String    @unique
+  profileImage                String?
+  xp                          Int       @default(0)
+  level                       Int       @default(1)
+  rank                        String    @default("Silver II")
+  currentStreak               Int       @default(1)
+  longestStreak               Int       @default(1)
+  totalStudyTime              Int       @default(0) // in seconds
+  totalLessonsCompleted       Int       @default(0)
+  totalVideosCompleted        Int       @default(0)
+  totalCheatSheetsCompleted   Int       @default(0)
+  totalQuestionBanksCompleted Int       @default(0)
+  averageAccuracy             Float     @default(0)
+  lastLogin                   DateTime  @default(now())
+  lastActivityDate            DateTime? @default(now())
+  currentChapter              String?   @default("Trigonometry")
+  currentExercise             String?   @default("Exercise 8.1")
+  currentDay                  String?   @default("Day 1")
+  currentVideo                String?
+  currentSubtopicId           Int?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+}
+
+model UserProgress {
+  id         Int      @id @default(autoincrement())
+  userEmail  String
+  subtopicId Int
+  score      Int
+  timeSpent  Int      @default(0) // in seconds
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userEmail, subtopicId])
+}
+
+model VideoProgress {
+  id                   Int       @id @default(autoincrement())
+  userEmail            String
+  videoId              String
+  watched              Boolean   @default(false)
+  watchPercentage      Float     @default(0)
+  startedAt            DateTime  @default(now())
+  completedAt          DateTime?
+  lastPlaybackPosition Float     @default(0) // in seconds
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([userEmail, videoId])
+}
+
+model CheatSheetProgress {
+  id                  Int      @id @default(autoincrement())
+  userEmail           String
+  cheatSheetId        String
+  opened              Boolean  @default(true)
+  readingProgress     Float    @default(0) // percentage 0-100
+  scrollPosition      Float    @default(0) // pixel offset or percentage
+  inlineQuizCompleted Boolean  @default(false)
+  completed           Boolean  @default(false)
+  timeSpentReading    Int      @default(0) // in seconds
+  updatedAt           DateTime @updatedAt
+
+  @@unique([userEmail, cheatSheetId])
+}
+
+model InlineQuizAttempt {
+  id             Int      @id @default(autoincrement())
+  userEmail      String
+  quizId         String
+  questionText   String
+  selectedAnswer String
+  correctAnswer  String
+  isCorrect      Boolean
+  attempts       Int      @default(1)
+  completionTime Int      @default(0) // in seconds
+  accuracy       Float    @default(0)
+  createdAt      DateTime @default(now())
+}
+
+model QuestionBankSubmission {
+  id             Int                  @id @default(autoincrement())
+  userEmail      String
+  bankTitle      String
+  totalScore     Int
+  totalQuestions Int
+  percentage     Float
+  accuracy       Float
+  completionDate DateTime             @default(now())
+  answers        QuestionBankAnswer[]
+}
+
+model QuestionBankAnswer {
+  id            Int                    @id @default(autoincrement())
+  submissionId  Int
+  questionId    Int
+  questionText  String
+  studentAnswer String
+  correctAnswer String
+  isCorrect     Boolean
+  attempts      Int                    @default(1)
+  timeTaken     Int                    @default(0) // in seconds
+  submission    QuestionBankSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model AIChatLog {
+  id              Int      @id @default(autoincrement())
+  userEmail       String
+  studentQuestion String
+  aiResponse      String
+  lessonContext   String?  // JSON stringified context
+  timestamp       DateTime @default(now())
+}
+
+model ConceptMastery {
+  id           Int      @id @default(autoincrement())
+  userEmail    String
+  conceptName  String
+  masteryScore Float    @default(0) // percentage 0-100
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userEmail, conceptName])
+}
+
+model Achievement {
+  id         Int      @id @default(autoincrement())
+  userEmail  String
+  badgeKey   String
+  title      String
+  unlockedAt DateTime @default(now())
+
+  @@unique([userEmail, badgeKey])
+}
+
+model DailyMission {
+  id               Int                @id @default(autoincrement())
+  userEmail        String
+  dateStr          String             // e.g. '2026-07-25'
+  estimatedMinutes Int                @default(60)
+  completed        Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  tasks            DailyMissionTask[]
+
+  @@unique([userEmail, dateStr])
+}
+
+model DailyMissionTask {
+  id               Int          @id @default(autoincrement())
+  missionId        Int
+  title            String
+  durationMinutes  Int
+  taskType         String       // 'video', 'cheatsheet', 'question_bank', 'revision'
+  targetSubtopicId Int?
+  completed        Boolean      @default(false)
+  mission          DailyMission @relation(fields: [missionId], references: [id], onDelete: Cascade)
+}
+
+model StreakLog {
+  id        Int      @id @default(autoincrement())
+  userEmail String
+  dateStr   String   // e.g. '2026-07-25'
+  createdAt DateTime @default(now())
+
+  @@unique([userEmail, dateStr])
+}

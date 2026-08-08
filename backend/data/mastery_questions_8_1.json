@@ -1,0 +1,18 @@
+[
+    {
+        "q": "In a right triangle ABC, right-angled at B, if tan A = 1, then what is the value of 2 sin A cos A?",
+        "type": "mcq",
+        "opts": ["0", "1", "2", "1/2"],
+        "ans": "1",
+        "expl": "If tan A = 1, then A = 45°. sin 45° = 1/√2, cos 45° = 1/√2. 2 * (1/√2) * (1/√2) = 2 * 1/2 = 1.",
+        "diff": "medium"
+    },
+    {
+        "q": "Which of the following is correct for an acute angle θ?",
+        "type": "mcq",
+        "opts": ["sin θ > 1", "cos θ > 1", "sin θ <= 1", "tan θ is always < 1"],
+        "ans": "sin θ <= 1",
+        "expl": "For any angle, |sin θ| and |cos θ| are always less than or equal to 1.",
+        "diff": "easy"
+    }
+]
